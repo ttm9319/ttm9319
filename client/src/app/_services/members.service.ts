@@ -21,7 +21,7 @@ export class MembersService {
   userParams: UserParams;
   
 
-  constructor(private htttp: HttpClient, private accountService: AccountService) { 
+  constructor(private http: HttpClient, private accountService: AccountService) { 
     this.accountService.currentUser$.pipe(take(1)).subscribe(user => {
       this.user =user;
       this.userParams =new UserParams(user);
@@ -66,11 +66,11 @@ export class MembersService {
       return of (member);
     }
 
-    return this.htttp.get<Member>(this.baseUrl + 'users/' + username);
+    return this.http.get<Member>(this.baseUrl + 'users/' + username);
   }
 
   updateMember(member: Member){
-    return this.htttp.put(this.baseUrl + 'users', member).pipe(
+    return this.http.put(this.baseUrl + 'users', member).pipe(
       map(()=>{
         const index =this.members.indexOf(member);
         this.members[index] = member;
@@ -79,16 +79,29 @@ export class MembersService {
   }
   
   setMainPhoto(photoId: number){
-    return this.htttp.put(this.baseUrl + 'users/set-main-photo/' + photoId, {});
+    return this.http.put(this.baseUrl + 'users/set-main-photo/' + photoId, {});
   }
 
 deletePhoto(photoId: number){
-  return this.htttp.delete(this.baseUrl + 'users/delete-photo/' + photoId);
+  return this.http.delete(this.baseUrl + 'users/delete-photo/' + photoId);
+}
+
+addLike(username: string)
+{
+  return this.http.post(this.baseUrl + 'likes/' + username, {})
+
+}
+
+getLikes(predicate: string, pageNumber, pageSize){
+  let params = this.getPaginationHeaders(pageNumber, pageSize);
+  params = params.append('predicate', predicate);
+  return this.getPaginatedResult<Partial<Member[]>>(this.baseUrl + 'likes', params);
+  
 }
 
 private getPaginatedResult<T>(url, params) {
   const paginatedResult: PaginatedResult<T> = new PaginatedResult<T>();
-   return this.htttp.get<T>(url, { observe: 'response', params }).pipe(
+   return this.http.get<T>(url, { observe: 'response', params }).pipe(
      map(response => {
        paginatedResult.result = response.body;
        if (response.headers.get('Pagination') !== null) {
